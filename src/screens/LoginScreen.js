@@ -111,7 +111,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     flexGrow: 1,
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.surfaceLight,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
     borderRadius: 8,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   loginBtnText: {
-    color: '#FFF',
+    color: COLORS.germanyBlack,
     ...TYPOGRAPHY.button,
   },
   footer: {

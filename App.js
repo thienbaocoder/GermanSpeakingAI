@@ -7,6 +7,7 @@ import { StyleSheet, View, ActivityIndicator } from 'react-native';
 
 // Themes & Screens
 import { COLORS } from './src/components/Theme';
+import GermanyBackground from './src/components/GermanyBackground';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -14,6 +15,10 @@ import PracticeScreen from './src/screens/PracticeScreen';
 import EvaluationScreen from './src/screens/EvaluationScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
+import VocabularyScreen from './src/screens/VocabularyScreen';
+import WritingScreen from './src/screens/WritingScreen';
+import WritingHistoryScreen from './src/screens/WritingHistoryScreen';
+import WritingResultScreen from './src/screens/WritingResultScreen';
 import { getCurrentUser } from './src/utils/storage';
 
 const Stack = createStackNavigator();
@@ -37,23 +42,25 @@ export default function App() {
 
   if (isLoggedIn === null) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <GermanyBackground>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </GermanyBackground>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <View style={styles.container}>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
+      <GermanyBackground>
+        <StatusBar style="light" backgroundColor={COLORS.backgroundDeep} />
         <SafeAreaView style={styles.safeArea}>
           <NavigationContainer theme={navTheme}>
             <Stack.Navigator 
               initialRouteName={isLoggedIn ? 'Home' : 'Login'}
               screenOptions={{
                 headerShown: false,
-                cardStyle: { backgroundColor: COLORS.background },
+                cardStyle: { backgroundColor: 'transparent' },
                 gestureEnabled: true,
               }}
             >
@@ -67,10 +74,14 @@ export default function App() {
               <Stack.Screen name="Evaluation" component={EvaluationScreen} />
               <Stack.Screen name="Settings" component={SettingsScreen} />
               <Stack.Screen name="Review" component={ReviewScreen} />
+              <Stack.Screen name="Vocabulary" component={VocabularyScreen} />
+              <Stack.Screen name="Writing" component={WritingScreen} />
+              <Stack.Screen name="WritingHistory" component={WritingHistoryScreen} />
+              <Stack.Screen name="WritingResult" component={WritingResultScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaView>
-      </View>
+      </GermanyBackground>
     </SafeAreaProvider>
   );
 }
@@ -89,12 +100,13 @@ const navTheme = {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

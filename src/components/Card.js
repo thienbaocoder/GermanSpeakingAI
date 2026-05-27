@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: COLORS.primaryAlpha10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   activeToggleBtn: {
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: COLORS.primaryAlpha15,
     borderColor: COLORS.primary + '40',
   },
   toggleBtnText: {
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   hintBox: {
-    backgroundColor: 'rgba(16, 185, 129, 0.02)',
+    backgroundColor: COLORS.primaryAlpha10,
   },
   boxTitle: {
     color: COLORS.primaryLight,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   germanText: {
     fontStyle: 'italic',
-    color: '#818CF8',
+    color: COLORS.primaryLight,
     fontWeight: '500',
   },
 });
