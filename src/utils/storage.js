@@ -5,6 +5,7 @@ const KEYS = {
   USER_LEVEL: '@user_level',
   APP_LANG: '@app_lang',
   PRACTICE_HISTORY: '@practice_history',
+  WRITING_HISTORY: '@writing_history',
   CURRENT_USER: '@current_user',
   USERS_DB: '@users_db',
   MISTAKES_DB: '@mistakes_db',
@@ -98,6 +99,68 @@ export const clearHistory = async () => {
     return true;
   } catch (error) {
     console.error('Error clearing history', error);
+    return false;
+  }
+};
+
+// ============ WRITING HISTORY ============
+
+export const getWritingHistory = async () => {
+  try {
+    const history = await AsyncStorage.getItem(KEYS.WRITING_HISTORY);
+    return history ? JSON.parse(history) : [];
+  } catch (error) {
+    console.error('Error fetching writing history', error);
+    return [];
+  }
+};
+
+export const addWritingHistoryRecord = async (record) => {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error('No user logged in');
+
+    const history = await getWritingHistory();
+    const newHistory = [
+      {
+        id: Date.now().toString(),
+        userId: currentUser.id,
+        date: new Date().toISOString(),
+        ...record,
+      },
+      ...history,
+    ].slice(0, 100);
+
+    await AsyncStorage.setItem(KEYS.WRITING_HISTORY, JSON.stringify(newHistory));
+    return newHistory;
+  } catch (error) {
+    console.error('Error adding writing history record', error);
+    return null;
+  }
+};
+
+export const getWritingHistoryForCurrentUser = async () => {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    const history = await getWritingHistory();
+    return history.filter((h) => h.userId === currentUser.id);
+  } catch (error) {
+    console.error('Error getting user writing history', error);
+    return [];
+  }
+};
+
+export const clearWritingHistoryForCurrentUser = async () => {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return true;
+    const history = await getWritingHistory();
+    const remaining = history.filter((h) => h.userId !== currentUser.id);
+    await AsyncStorage.setItem(KEYS.WRITING_HISTORY, JSON.stringify(remaining));
+    return true;
+  } catch (error) {
+    console.error('Error clearing user writing history', error);
     return false;
   }
 };

@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Key, GraduationCap, Trash2, CheckCircle2, ChevronRight, BookOpen, LogOut } from 'lucide-react-native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../components/Theme';
-import { getApiKey, saveApiKey, getLevel, saveLevel, clearHistory, logOut } from '../utils/storage';
+import { getApiKey, saveApiKey, getLevel, saveLevel, clearHistory, logOut, getCurrentUser } from '../utils/storage';
+import { saveAdminGeminiApiKey } from '../config/adminApi';
+
+const ADMIN_EMAILS = ['admin@germanspeaking.ai', 'admin@admin.com'];
 
 export default function SettingsScreen({ navigation }) {
   const [apiKey, setApiKey] = useState('');
@@ -21,12 +24,18 @@ export default function SettingsScreen({ navigation }) {
 
   const handleSaveApiKey = async () => {
     const success = await saveApiKey(apiKey);
-    if (success) {
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2000);
-    } else {
+    if (!success) {
       Alert.alert('Lỗi', 'Không thể lưu API Key. Vui lòng thử lại.');
+      return;
     }
+
+    const user = await getCurrentUser();
+    if (user && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+      await saveAdminGeminiApiKey(apiKey);
+    }
+
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleSelectLevel = async (selectedLevel) => {
@@ -107,7 +116,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           
           <Text style={styles.description}>
-            Ứng dụng của bạn sử dụng Gemini 1.5 Flash để trực tiếp nghe file âm thanh, dịch thuật và phân tích phát âm.
+            Dùng cho chấm điểm phát âm cá nhân. Tài khoản admin: key này cũng dùng chung cho tạo chủ đề / flashcard AI.
           </Text>
 
           <TextInput
@@ -210,7 +219,7 @@ export default function SettingsScreen({ navigation }) {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>DeutschSprechen AI v1.0.0</Text>
-          <Text style={styles.footerSub}>Powered by Gemini 3.5 Flash</Text>
+          <Text style={styles.footerSub}>Powered by Gemini 2.0 Flash</Text>
         </View>
 
       </ScrollView>
@@ -221,7 +230,7 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: SPACING.md,
@@ -304,7 +313,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   levelCardActive: {
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: COLORS.primaryAlpha15,
     borderColor: COLORS.primary,
   },
   levelText: {

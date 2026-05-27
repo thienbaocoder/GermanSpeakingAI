@@ -5,7 +5,7 @@ export const DEFAULT_TOPICS = [
     titleDe: 'Sich vorstellen',
     description: 'Học cách giới thiệu bản thân, sở thích và công việc hàng ngày bằng tiếng Đức.',
     icon: 'User',
-    gradient: ['#6366F1', '#4F46E5'],
+    gradient: ['#FFCC00', '#C9A000'],
     cards: [
       {
         id: 'v1',
@@ -55,7 +55,7 @@ export const DEFAULT_TOPICS = [
     titleDe: 'Einkaufen gehen',
     description: 'Hỏi giá cả, mua sắm quần áo, tìm kiếm món đồ ưa thích tại cửa hàng.',
     icon: 'ShoppingBag',
-    gradient: ['#EC4899', '#DB2777'],
+    gradient: ['#DD0000', '#A80000'],
     cards: [
       {
         id: 'e1',
@@ -105,7 +105,7 @@ export const DEFAULT_TOPICS = [
     titleDe: 'Im Restaurant',
     description: 'Gọi món, đặt bàn, hỏi món ăn và thanh toán hóa đơn ăn uống.',
     icon: 'Utensils',
-    gradient: ['#10B981', '#059669'],
+    gradient: ['#FFCC00', '#E6B800'],
     cards: [
       {
         id: 'r1',
@@ -155,7 +155,7 @@ export const DEFAULT_TOPICS = [
     titleDe: 'Auf Reisen',
     description: 'Hỏi đường, mua vé tàu, đặt phòng khách sạn và hỏi thông tin chuyến đi.',
     icon: 'MapPin',
-    gradient: ['#F59E0B', '#D97706'],
+    gradient: ['#2A2A32', '#FFCC00'],
     cards: [
       {
         id: 'rs1',
