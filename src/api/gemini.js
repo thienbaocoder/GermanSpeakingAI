@@ -1,9 +1,9 @@
-import { saveMistake } from '../utils/storage';
+import { saveMistake } from '../database/services/learningService';
 import { getAdminGeminiApiKey } from '../config/adminApi';
 
 // ============ API CONFIGURATION ============
 const GEMINI_API_VERSION = 'v1';
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-3.5-flash';
 const CLEAN_JSON_REGEX = /^\s*```(?:json)?([\s\S]*?)```\s*$/;
 
 // ============ UTILITIES ============

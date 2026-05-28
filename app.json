@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "GermanSpeakingAI",
-    "slug": "GermanSpeakingAI",
+    "name": "GermanSpeakingAI mit Thien Baoooo",
+    "slug": "GermanSpeakingAI mit Thien Baoooo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/germany.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
