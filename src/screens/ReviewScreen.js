@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, Activit
 import { BookOpen, Trash2, ArrowLeft, Filter, AlertCircle } from 'lucide-react-native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../components/Theme';
 import Flashcard from '../components/Flashcard';
-import { getMistakesForCurrentUser, updateMistakeFrequency } from '../utils/storage';
+import * as storage from '../database/services';
 
 const { height } = Dimensions.get('window');
 
@@ -22,7 +22,7 @@ export default function ReviewScreen({ navigation, route }) {
 
   const loadMistakes = async () => {
     setLoading(true);
-    let userMistakes = await getMistakesForCurrentUser();
+    let userMistakes = await storage.getMistakesForCurrentUser();
     
     if (topicFilter) {
       userMistakes = userMistakes.filter(m => m.topic === topicFilter);
@@ -56,7 +56,7 @@ export default function ReviewScreen({ navigation, route }) {
   };
 
   const handleMarkReviewed = async (mistakeId) => {
-    await updateMistakeFrequency(mistakeId);
+    await storage.updateMistakeFrequency(mistakeId);
     Alert.alert('Thành công', 'Đã ghi nhận bạn xem lại từ này.');
     loadMistakes();
   };

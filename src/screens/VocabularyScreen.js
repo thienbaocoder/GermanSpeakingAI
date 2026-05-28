@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { ArrowLeft, BookOpen } from 'lucide-react-native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../components/Theme';
-import { getLevel } from '../utils/storage';
+import * as storage from '../database/services';
 import {
-  LEARNING_TOPICS,
-  getLevelConfig,
-  getVocabularyList,
-} from '../utils/learningData';
+  getLearningTopicNamesFromDb,
+  getVocabularyItemsFromDb,
+  getLevelDisplayConfig,
+} from '../database/learningDbService';
 
 const WORD_TYPES = [
   { id: 'verb', label: 'Động từ' },
@@ -17,9 +17,11 @@ const WORD_TYPES = [
 
 export default function VocabularyScreen({ navigation }) {
   const [level, setLevel] = useState('A2');
-  const [selectedTopic, setSelectedTopic] = useState(LEARNING_TOPICS[0]);
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState(null);
   const [selectedType, setSelectedType] = useState('verb');
   const [vocabulary, setVocabulary] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [term, setTerm] = useState('');
   const [article, setArticle] = useState('');
@@ -27,10 +29,22 @@ export default function VocabularyScreen({ navigation }) {
   const [example, setExample] = useState('');
   const [usage, setUsage] = useState('');
 
-  const levelConfig = getLevelConfig(level);
+  const levelConfig = getLevelDisplayConfig(level);
 
-  const loadList = (lvl, topic, type) => {
-    setVocabulary(getVocabularyList(lvl, topic, type));
+  const loadList = async (lvl, topic, type) => {
+    if (!topic) return;
+
+    try {
+      setLoading(true);
+
+      const items = await getVocabularyItemsFromDb(lvl, topic, type);
+      setVocabulary(items);
+    } catch (error) {
+      console.error('Load vocabulary error:', error);
+      Alert.alert('Lỗi', 'Không thể tải từ vựng từ Supabase.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -44,33 +58,67 @@ export default function VocabularyScreen({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      const currentLevel = await getLevel();
-      setLevel(currentLevel);
-      loadList(currentLevel, selectedTopic, selectedType);
+      try {
+        setLoading(true);
+
+        const currentLevel = await storage.getLevel();
+        const dbTopics = await getLearningTopicNamesFromDb();
+
+        console.log('DB topics:', dbTopics);
+
+        const firstTopic = selectedTopic || dbTopics[0] || null;
+
+        setLevel(currentLevel || 'A2');
+        setTopics(dbTopics);
+        setSelectedTopic(firstTopic);
+
+        if (firstTopic) {
+          const items = await getVocabularyItemsFromDb(
+            currentLevel || 'A2',
+            firstTopic,
+            selectedType
+          );
+
+          console.log('Loaded vocabulary items:', items.length);
+          setVocabulary(items);
+        } else {
+          setVocabulary([]);
+        }
+      } catch (error) {
+        console.error('Load vocabulary screen error:', error);
+        Alert.alert('Lỗi', 'Không thể tải dữ liệu từ Supabase.');
+      } finally {
+        setLoading(false);
+      }
     });
+
     return unsubscribe;
-  }, [navigation, selectedTopic, selectedType]);
+  }, [navigation]);
 
   const handleSelectTopic = (topic) => {
     setSelectedTopic(topic);
-    loadList(level, topic, selectedType);
     resetForm();
   };
 
   const handleSelectType = (type) => {
     setSelectedType(type);
-    loadList(level, selectedTopic, type);
     resetForm();
   };
 
   const handleEdit = (item) => {
     setEditingId(item.id);
-    setTerm(item.term);
+    setTerm(item.term || '');
     setArticle(item.article || '');
-    setMeaning(item.meaning);
-    setExample(item.example);
-    setUsage(item.usage);
+    setMeaning(item.meaning || '');
+    setExample(item.example || '');
+    setUsage(item.usage || '');
   };
+
+  useEffect(() => {
+    if (!selectedTopic) return;
+
+    loadList(level, selectedTopic, selectedType);
+  }, [selectedTopic, selectedType, level]);
 
   const handleDelete = (id) => {
     Alert.alert('Xóa từ vựng', 'Bạn có chắc muốn xóa mục này?', [
@@ -94,13 +142,13 @@ export default function VocabularyScreen({ navigation }) {
         prev.map((v) =>
           v.id === editingId
             ? {
-                ...v,
-                term: term.trim(),
-                article: article.trim(),
-                meaning: meaning.trim(),
-                example: example.trim(),
-                usage: usage.trim(),
-              }
+              ...v,
+              term: term.trim(),
+              article: article.trim(),
+              meaning: meaning.trim(),
+              example: example.trim(),
+              usage: usage.trim(),
+            }
             : v
         )
       );
@@ -138,13 +186,15 @@ export default function VocabularyScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Chủ đề</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {LEARNING_TOPICS.map((topic) => (
+          {topics.map((topic) => (
             <TouchableOpacity
               key={topic}
               style={[styles.chip, selectedTopic === topic && styles.chipActive]}
               onPress={() => handleSelectTopic(topic)}
             >
-              <Text style={[styles.chipText, selectedTopic === topic && styles.chipTextActive]}>{topic}</Text>
+              <Text style={[styles.chipText, selectedTopic === topic && styles.chipTextActive]}>
+                {topic}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -172,7 +222,9 @@ export default function VocabularyScreen({ navigation }) {
             </Text>
           </View>
 
-          {vocabulary.length === 0 ? (
+          {loading ? (
+            <Text style={styles.emptyText}>Đang tải từ vựng...</Text>
+          ) : vocabulary.length === 0 ? (
             <Text style={styles.emptyText}>Chưa có mục nào. Thêm mới bên dưới.</Text>
           ) : (
             vocabulary.map((item) => (

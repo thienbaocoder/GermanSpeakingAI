@@ -6,12 +6,19 @@ import { ChevronLeft, ChevronRight, Play, Square, RefreshCw, Send, ArrowLeft } f
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../components/Theme';
 import Card from '../components/Card';
 import RecordingWave from '../components/RecordingWave';
-import { getApiKey, getLevel } from '../utils/storage';
+import * as storage from '../database/services';
 import { evaluateSpokenGerman } from '../api/gemini';
 
 export default function PracticeScreen({ route, navigation }) {
-  const { topicTitle, cards } = route.params;
+  const { topicTitle = 'Practice', cards = [] } = route.params || {};
   const [currentIndex, setCurrentIndex] = useState(0);
+  
+  useEffect(() => {
+    if (!cards || cards.length === 0) {
+      Alert.alert('Lỗi điều hướng', 'Không tìm thấy dữ liệu luyện tập. Quay lại Trang chủ.');
+      navigation.replace('Home');
+    }
+  }, [cards, navigation]);
   
   // Audio state
   const [recording, setRecording] = useState(null);
@@ -42,6 +49,10 @@ export default function PracticeScreen({ route, navigation }) {
   }, [sound]);
 
   const activeCard = cards[currentIndex];
+
+  if (!cards || cards.length === 0) {
+    return null;
+  }
 
   const startRecording = async () => {
     try {
@@ -163,7 +174,7 @@ export default function PracticeScreen({ route, navigation }) {
       return;
     }
 
-    const apiKey = await getApiKey();
+    const apiKey = await storage.getApiKey();
     if (!apiKey) {
       Alert.alert(
         'Yêu cầu API Key',
@@ -181,7 +192,7 @@ export default function PracticeScreen({ route, navigation }) {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const userLevel = await getLevel();
+      const userLevel = await storage.getLevel();
 
       // Trigger Gemini evaluation API
       const result = await evaluateSpokenGerman(
