@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { ArrowLeft, Trash2, ChevronRight } from 'lucide-react-native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../components/Theme';
-import { clearWritingHistoryForCurrentUser, getWritingHistoryForCurrentUser } from '../utils/storage';
+import * as storage from '../database/services';
 
 export default function WritingHistoryScreen({ navigation }) {
   const [items, setItems] = useState([]);
 
   const load = async () => {
-    const history = await getWritingHistoryForCurrentUser();
+    const history = await storage.getWritingHistoryForCurrentUser();
     setItems(history);
   };
 
@@ -26,7 +26,7 @@ export default function WritingHistoryScreen({ navigation }) {
         text: 'Xóa',
         style: 'destructive',
         onPress: async () => {
-          await clearWritingHistoryForCurrentUser();
+          await storage.clearWritingHistoryForCurrentUser();
           await load();
         },
       },

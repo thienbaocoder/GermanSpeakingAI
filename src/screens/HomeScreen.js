@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Dimensions } from 'react-native';
-import { User, ShoppingBag, Utensils, MapPin, Sparkles, BookOpen, ChevronRight, Settings, Shuffle, PenLine } from 'lucide-react-native';
+import {
+  User,
+  ShoppingBag,
+  Utensils,
+  MapPin,
+  Sparkles,
+  BookOpen,
+  ChevronRight,
+  Settings,
+  Shuffle,
+  PenLine,
+  RotateCw,
+  GraduationCap,
+} from 'lucide-react-native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../components/Theme';
-import { DEFAULT_TOPICS } from '../utils/mockData';
-import { getLevel } from '../utils/storage';
+import { getSpeakingTopicsFromDb } from '../database/learningDbService';
+import * as storage from '../database/services';
 import { generateCustomFlashcards, generateRandomTopicWithFlashcards } from '../api/gemini';
 
 const { width } = Dimensions.get('window');
@@ -14,15 +27,31 @@ export default function HomeScreen({ navigation }) {
   const [customTopic, setCustomTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingRandom, setIsGeneratingRandom] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      async function loadLevel() {
-        const storedLevel = await getLevel();
-        setUserLevel(storedLevel);
+      async function loadHomeData() {
+        try {
+          setLoadingTopics(true);
+
+          const storedLevel = await storage.getLevel();
+          const dbTopics = await getSpeakingTopicsFromDb();
+
+          setUserLevel(storedLevel || 'A2');
+          setTopics(dbTopics);
+        } catch (error) {
+          console.error('Load home data error:', error);
+          Alert.alert('Lỗi', 'Không thể tải chủ đề luyện nói từ Supabase.');
+        } finally {
+          setLoadingTopics(false);
+        }
       }
-      loadLevel();
+
+      loadHomeData();
     });
+
     return unsubscribe;
   }, [navigation]);
 
@@ -46,6 +75,8 @@ export default function HomeScreen({ navigation }) {
 
   const handleOpenVocabulary = () => navigation.navigate('Vocabulary');
   const handleOpenWriting = () => navigation.navigate('Writing');
+  const handleOpenReview = () => navigation.navigate('Review');
+  const handleOpenGrammar = () => navigation.navigate('Grammar');
 
   const getAiErrorMessage = (error) => {
     if (error.message?.includes('ADMIN_API_KEY_MISSING')) {
@@ -54,7 +85,7 @@ export default function HomeScreen({ navigation }) {
     if (error.message?.includes('MODEL_NOT_FOUND_404')) {
       return (
         'Lỗi mô hình API: Model Gemini không hợp lệ.\n\n' +
-        'Kiểm tra GEMINI_MODEL trong src/api/gemini.js (vd: gemini-2.0-flash).'
+        'Kiểm tra GEMINI_MODEL trong src/api/gemini.js (vd: gemini-3.5-flash).'
       );
     }
     if (error.message?.includes('API_ERROR_401') || error.message?.includes('API_ERROR_403')) {
@@ -157,7 +188,7 @@ export default function HomeScreen({ navigation }) {
       {/* Top Header Row */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hallo! Học tiếng Đức</Text>
+          <Text style={styles.greeting}>“Học thêm 1 cái mới, sống thêm 1 cuộc đời”</Text>
           <Text style={styles.title}>Luyện nói Deutsch</Text>
         </View>
         <TouchableOpacity
@@ -177,16 +208,26 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <View style={styles.quickAccessRow}>
-        <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenVocabulary}>
-          <BookOpen color={COLORS.accent} size={18} />
-          <Text style={styles.quickTitle}>Vokabular</Text>
-          <Text style={styles.quickDesc}>Chủ đề + động từ/tính từ/danh từ + câu mẫu</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenWriting}>
-          <PenLine color={COLORS.warning} size={18} />
-          <Text style={styles.quickTitle}>Schreiben</Text>
-          <Text style={styles.quickDesc}>Đề Goethe theo level, 10-15 phút và AI sửa bài</Text>
-        </TouchableOpacity>
+        <View style={styles.quickAccessCol}>
+          <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenVocabulary}>
+            <BookOpen color={COLORS.accent} size={18} />
+            <Text style={styles.quickTitle}>Vokabular</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenGrammar}>
+            <GraduationCap color={COLORS.primaryLight} size={18} />
+            <Text style={styles.quickTitle}>Grammatik</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.quickAccessCol}>
+          <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenReview}>
+            <RotateCw color={COLORS.secondary} size={18} />
+            <Text style={styles.quickTitle}>Lỗi sai</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.quickCard, SHADOWS.glass]} onPress={handleOpenWriting}>
+            <PenLine color={COLORS.warning} size={18} />
+            <Text style={styles.quickTitle}>Schreiben</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Custom AI Card Generator */}
@@ -196,7 +237,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.customTopicTitle}>Tự sáng tạo chủ đề bằng AI</Text>
         </View>
         <Text style={styles.customTopicDesc}>
-          Nhập bất kỳ tình huống nào bạn muốn luyện tập (vd: đi phỏng vấn, đi khám răng, mua hoa tặng mẹ...), AI sẽ soạn sẵn câu hỏi cho bạn. Không cần nhập API key cá nhân.
+          Nhập bất kỳ tình huống nào bạn muốn luyện tập (vd: đi phỏng vấn, đi khám răng, mua hoa tặng mẹ...), AI sẽ soạn sẵn câu hỏi.
         </Text>
 
         <TouchableOpacity
@@ -241,26 +282,43 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.sectionTitle}>Chủ đề có sẵn</Text>
 
       <View style={styles.grid}>
-        {DEFAULT_TOPICS.map((topic) => {
-          const mainColor = topic.gradient[0];
-          return (
-            <TouchableOpacity
-              key={topic.id}
-              style={[styles.topicCard, { borderColor: mainColor + '30' }]}
-              onPress={() => handleSelectPredefinedTopic(topic)}
-            >
-              <View style={[styles.iconWrapper, { backgroundColor: mainColor + '15' }]}>
-                {renderIcon(topic.icon, mainColor)}
-              </View>
+        {loadingTopics ? (
+          <View style={{ paddingVertical: 24 }}>
+            <ActivityIndicator color={COLORS.primaryLight} />
+            <Text style={{ color: COLORS.textMuted, textAlign: 'center', marginTop: 8 }}>
+              Đang tải chủ đề từ Supabase...
+            </Text>
+          </View>
+        ) : topics.length === 0 ? (
+          <View style={[styles.customTopicBox, SHADOWS.glass]}>
+            <Text style={styles.customTopicTitle}>Chưa có chủ đề</Text>
+            <Text style={styles.customTopicDesc}>
+              Bảng speaking_topics hoặc speaking_cards chưa có dữ liệu.
+            </Text>
+          </View>
+        ) : (
+          topics.map((topic) => {
+            const mainColor = topic.gradient?.[0] || COLORS.primary;
 
-              <View style={styles.topicInfo}>
-                <Text style={styles.topicDe}>{topic.titleDe}</Text>
-                <Text style={styles.topicVi}>{topic.title}</Text>
-                <Text style={styles.cardCount}>{topic.cards.length} câu giao tiếp</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <TouchableOpacity
+                key={topic.id}
+                style={[styles.topicCard, { borderColor: mainColor + '30' }]}
+                onPress={() => handleSelectPredefinedTopic(topic)}
+              >
+                <View style={[styles.iconWrapper, { backgroundColor: mainColor + '15' }]}>
+                  {renderIcon(topic.icon, mainColor)}
+                </View>
+
+                <View style={styles.topicInfo}>
+                  <Text style={styles.topicDe}>{topic.titleDe}</Text>
+                  <Text style={styles.topicVi}>{topic.title}</Text>
+                  <Text style={styles.cardCount}>{topic.cards.length} câu giao tiếp</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
 
     </ScrollView>
@@ -342,6 +400,10 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     marginBottom: SPACING.lg,
   },
+  quickAccessCol: {
+    flex: 1,
+    gap: SPACING.md,
+  },
   quickCard: {
     flex: 1,
     borderRadius: 16,
@@ -349,17 +411,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.glassBorder,
     backgroundColor: COLORS.surface,
     padding: SPACING.md,
-    gap: SPACING.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   quickTitle: {
     color: COLORS.text,
     fontWeight: '700',
     fontSize: 14,
-  },
-  quickDesc: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    lineHeight: 16,
   },
   customTopicHeader: {
     flexDirection: 'row',

@@ -1,27 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Volume2, Play, Award, Sparkles, MessageCircle, AlertTriangle, ArrowRight, Home } from 'lucide-react-native';
+import { Volume2, Play, Award, Sparkles, MessageCircle, ArrowRight, Home, BookOpen } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../components/Theme';
-import { addHistoryRecord } from '../utils/storage';
+import * as storage from '../database/services';
 import { extractAndSaveMistakes } from '../api/gemini';
 
 export default function EvaluationScreen({ route, navigation }) {
-  const { evaluation, question, audioUri } = route.params;
+  const { evaluation, question, audioUri } = route.params || {};
   const [sound, setSound] = useState(null);
   const [isPlayingBack, setIsPlayingBack] = useState(false);
 
   useEffect(() => {
+    if (!evaluation) {
+      Alert.alert('Lỗi điều hướng', 'Không tìm thấy dữ liệu đánh giá. Quay lại Trang chủ.');
+      navigation.replace('Home');
+      return;
+    }
+
     // Proactively save evaluation to local storage history on load
     async function saveRecord() {
-      await addHistoryRecord({
-        question,
-        overallScore: evaluation.overallScore,
-        transcript: evaluation.transcript,
-        correctionSuggested: evaluation.correctionSuggested,
+      await storage.savePracticeSession({
+        topic: route.params?.topic || 'General',
+        wordType: 'speaking',
+        correctCount: evaluation.overallScore >= 60 ? 1 : 0,
+        totalCount: 1,
+        score: evaluation.overallScore || 0,
+        durationSeconds: 0,
       });
-      
+
       // Extract and save mistakes to mistakes database
       const topic = route.params?.topic || 'General';
       await extractAndSaveMistakes(evaluation, topic, evaluation.translation);
@@ -33,7 +41,11 @@ export default function EvaluationScreen({ route, navigation }) {
         sound.unloadAsync();
       }
     };
-  }, [sound]);
+  }, [evaluation, navigation, sound]);
+
+  if (!evaluation) {
+    return null;
+  }
 
   const playCorrectedTTS = () => {
     Speech.speak(evaluation.correctionSuggested, {
@@ -89,7 +101,7 @@ export default function EvaluationScreen({ route, navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      
+
       {/* Top Banner Accent */}
       <View style={styles.header}>
         <Award color={COLORS.primaryLight} size={36} />
@@ -108,8 +120,8 @@ export default function EvaluationScreen({ route, navigation }) {
           </View>
           <View style={styles.mainScoreInfo}>
             <Text style={styles.overallRating}>
-              {evaluation.overallScore >= 80 ? 'Sehr Gut! (Rất Tốt)' : 
-               evaluation.overallScore >= 60 ? 'Gut! (Khá Tốt)' : 'Versuch es noch einmal!'}
+              {evaluation.overallScore >= 80 ? 'Sehr Gut! (Rất Tốt)' :
+                evaluation.overallScore >= 60 ? 'Gut! (Khá Tốt)' : 'Versuch es noch einmal!'}
             </Text>
             <Text style={styles.overallRatingSub}>
               Cố gắng hoàn thiện phát âm và cấu trúc để cải thiện điểm số.
@@ -190,6 +202,15 @@ export default function EvaluationScreen({ route, navigation }) {
           </Text>
         </View>
       </View>
+
+      {/* Review mistakes shortcut */}
+      <TouchableOpacity
+        style={styles.reviewMistakesBtn}
+        onPress={() => navigation.navigate('Review', { topicFilter: route.params?.topic })}
+      >
+        <BookOpen size={18} color={COLORS.germanyBlack} />
+        <Text style={styles.reviewMistakesBtnText}>Ôn tập lỗi sai ngay 📚</Text>
+      </TouchableOpacity>
 
       {/* Continue & Navigation Actions */}
       <View style={styles.actionRow}>
@@ -398,10 +419,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
+  reviewMistakesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginBottom: SPACING.sm,
+    shadowColor: COLORS.germanyGold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  reviewMistakesBtnText: {
+    color: COLORS.germanyBlack,
+    fontSize: 15,
+    fontWeight: '800',
+  },
   actionRow: {
     flexDirection: 'row',
     gap: SPACING.md,
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
   },
   homeBtn: {
     flexDirection: 'row',

@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import { ArrowLeft, Clock3, RefreshCw, Send } from 'lucide-react-native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../components/Theme';
-import { addWritingHistoryRecord, getLevel } from '../utils/storage';
+import * as storage from '../database/services';
+import { getWritingPromptFromDb } from '../database/learningDbService';
 import {
   evaluateWritingLocally,
   getLevelConfig,
-  getWritingPrompt,
 } from '../utils/learningData';
 
 const TASK_TYPES = ['Email', 'Beschwerde', 'Meinung'];
@@ -42,7 +42,7 @@ export default function WritingScreen({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      const currentLevel = await getLevel();
+      const currentLevel = await storage.getLevel();
       setLevel(currentLevel);
       await loadPrompt(currentLevel, taskType);
     });
@@ -75,13 +75,21 @@ export default function WritingScreen({ navigation }) {
   };
 
   const loadPrompt = async (currentLevel = level, currentType = taskType) => {
-    setLoadingPrompt(true);
-    const prompt = getWritingPrompt(currentLevel, currentType);
-    setPromptData(prompt);
-    setDurationSeconds(prompt.durationSeconds);
-    setEssay('');
-    resetTimer(prompt.durationSeconds);
-    setLoadingPrompt(false);
+    try {
+      setLoadingPrompt(true);
+
+      const prompt = await getWritingPromptFromDb(currentLevel, currentType);
+
+      setPromptData(prompt);
+      setDurationSeconds(prompt.durationSeconds);
+      setEssay('');
+      resetTimer(prompt.durationSeconds);
+    } catch (error) {
+      console.error('Load writing prompt error:', error);
+      Alert.alert('Lỗi', 'Không thể tải đề viết từ Supabase.');
+    } finally {
+      setLoadingPrompt(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -119,7 +127,7 @@ export default function WritingScreen({ navigation }) {
         result,
       };
 
-      await addWritingHistoryRecord(payload);
+      await storage.addWritingHistoryRecord(payload);
       navigation.navigate('WritingResult', { payload });
     } catch (error) {
       console.error('Writing local evaluation error:', error.message);
